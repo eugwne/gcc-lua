@@ -59,7 +59,11 @@ extern "C" {
 int plugin_is_GPL_compatible;
 
 /* weak symbol is non-NULL for C++ frontend */
-__typeof__(namespace_binding) namespace_binding __attribute__((weak));
+#if (GCC_VERSION >= 8000)
+__typeof__ (get_namespace_binding) get_namespace_binding __attribute__ ((weak));
+#else
+__typeof__ (namespace_binding) namespace_binding __attribute__ ((weak));
+#endif
 
 /* registry key for tree userdata cache */
 static char gcclua_tree_cache;
@@ -634,10 +638,17 @@ static int gcclua_tree_get_type_anonymous(lua_State *L)
   const tree *t;
   luaL_checktype(L, 1, LUA_TUSERDATA);
   t = (const tree *)lua_touserdata(L, 1);
+#if (GCC_VERSION >= 8000)
+  if (!get_namespace_binding) {
+    return 0;
+  }
+  lua_pushboolean(L, TYPE_UNNAMED_P(*t));
+#else
   if (!namespace_binding) {
     return 0;
   }
   lua_pushboolean(L, TYPE_ANONYMOUS_P(*t));
+#endif
   return 1;
 }
 
@@ -884,7 +895,11 @@ static int gcclua_tree_get_type_vector_subparts(lua_State *L)
   const tree *t;
   luaL_checktype(L, 1, LUA_TUSERDATA);
   t = (const tree *)lua_touserdata(L, 1);
+#if (GCC_VERSION >= 8000)
+  lua_pushinteger(L, TYPE_VECTOR_SUBPARTS(*t).to_constant());
+#else
   lua_pushinteger(L, TYPE_VECTOR_SUBPARTS(*t));
+#endif
   return 1;
 }
 
